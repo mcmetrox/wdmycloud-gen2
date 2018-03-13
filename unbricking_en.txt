@@ -1,0 +1,78 @@
+###################################
+#
+# One of success-story with this howto: 
+# https://community.wd.com/t/my-cloud-gen2-using-an-8tb-hdd-and-formatting-failure-error-code-600/221499/1
+#
+###################################
+
+0. Download these files:
+http://support.wdc.com/downloads.aspx?g=904 (Original firmware)
+https://ftp.anionix.ru/WDMyCloud/WDMyCloud-Gen2/usbrecovery.tar.gz (WD Recovery + My miniOS)
+
+1. Use any USB Flash drive, format it to FAT32 (Important!)
+2. Unpack usbrecovery.tar.gz to this drive (You will get "boot" folder and 4 files inside)
+3. Plug this USB drive to WD MyCloud, turn on power. Wait yellow-red (blinking) light.
+4. Connect via Telnet (Search IP in your router, unde DHCP section.)
+5. Format HDD if need:
+parted /dev/sda
+mklabel gpt
+mkpart primary 1049kB 2149MB
+mkpart primary 8591MB -1MB
+mkpart primary 7517MB 8591MB
+mkpart primary 2149MB 3222MB
+mkpart primary 3222MB 4296MB
+mkpart primary 4296MB 6443MB
+mkpart primary 6443MB 7517MB
+q
+mkswap /dev/sda1
+mkfs.ext4 /dev/sda3
+
+6. Install original WD recovery and reboot:
+mkdir -p /mnt/usb /mnt/root
+mount /dev/sda3 /mnt/root
+mount /dev/sdb1 /mnt/usb
+cp -r /mnt/usb/boot /mnt/root/
+cd /mnt/root/boot
+rm uImage uRamdisk
+mv uImage-wdrecovery uImage
+mv uRamdisk-wdrecovery uRamdisk
+cd /
+umount /mnt/root /mnt/usb
+sync
+reboot -f
+
+7. After reboot device get old IP address and accessable via Web-GUI (Recovery mode). Use original firmware (.bin file) here.
+
+Done!
+
+
+=====================================
+# Alternative way:
+
+# Use Debian/ubuntu or any other linux distro (USB/CD Live image)
+# All "/dev/sda" change to your disk! (List disks in system: "parted -l")
+# If this is new disk or damaged (formatted) old, recreate partitions first:
+parted /dev/sda
+mklabel gpt
+mkpart primary 1049kB 2149MB
+mkpart primary 8591MB -1MB
+mkpart primary 7517MB 8591MB
+mkpart primary 2149MB 3222MB
+mkpart primary 3222MB 4296MB
+mkpart primary 4296MB 6443MB
+mkpart primary 6443MB 7517MB
+q
+mkswap /dev/sda1
+mkfs.ext4 /dev/sda3
+
+# Download and unpack files from WDMyCloud/WDMyCloud-Gen2/Developing: uImage-wdrecovery and uRamdisk-wdrecovery
+# Write it disk:
+mkdir /mnt/boot
+mount /dev/sda3 /mnt/boot
+mkdir /mnt/boot/boot
+cp uImage-wdrecovery /mnt/boot/boot/uImage
+cp uRamdisk-wdrecovery /mnt/boot/boot/uRamdisk
+
+# Done. Connect disk back to WDMC and turn on.
+# After few minutes WDMC boots to "WD Recovery". Go to webgui and upload official firmware.
+# Done!
